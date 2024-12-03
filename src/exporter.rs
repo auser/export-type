@@ -22,13 +22,12 @@ pub fn add_struct_or_enum(path: PathBuf, output: Output) -> TSTypeResult<()> {
 }
 
 pub fn create_exporter_files(export_path: PathBuf) -> TSTypeResult<()> {
-    // Print cargo instructions only once at the start
     static INSTRUCTIONS_PRINTED: std::sync::Once = std::sync::Once::new();
     INSTRUCTIONS_PRINTED.call_once(|| {
         if std::env::var("OUT_DIR").is_ok() {
-            println!("cargo:rerun-if-changed=src");
+            eprintln!("cargo:rerun-if-changed=src");
             if let Ok(out_dir) = std::env::var("OUT_DIR") {
-                println!("cargo:rustc-env=TYPES_OUT_DIR={}", out_dir);
+                eprintln!("cargo:rustc-env=TYPES_OUT_DIR={}", out_dir);
             }
         }
     });
@@ -50,7 +49,6 @@ pub fn create_exporter_files(export_path: PathBuf) -> TSTypeResult<()> {
         }
     }
 
-    // Write single index.ts file
     if !index_content.is_empty() {
         std::fs::create_dir_all(&export_path)?;
         std::fs::write(export_path.join("index.ts"), index_content)?;

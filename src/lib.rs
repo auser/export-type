@@ -53,8 +53,8 @@ pub fn export_type(input: TokenStream) -> TokenStream {
                     let _ = create_exporter_files(out_path.join("types"));
 
                     // Emit cargo instructions for build.rs
-                    println!("cargo:rerun-if-changed=src");
-                    println!("cargo:rustc-env=TYPES_OUT_DIR={}", out_path.display());
+                    // println!("cargo:rerun-if-changed=src");
+                    // println!("cargo:rustc-env=TYPES_OUT_DIR={}", out_path.display());
                 }
 
                 // During normal compilation, write to target path

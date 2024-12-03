@@ -22,15 +22,15 @@ pub fn add_struct_or_enum(path: PathBuf, output: Output) -> TSTypeResult<()> {
 }
 
 pub fn create_exporter_files(export_path: PathBuf) -> TSTypeResult<()> {
-    static INSTRUCTIONS_PRINTED: std::sync::Once = std::sync::Once::new();
-    INSTRUCTIONS_PRINTED.call_once(|| {
-        if std::env::var("OUT_DIR").is_ok() {
-            eprintln!("cargo:rerun-if-changed=src");
-            if let Ok(out_dir) = std::env::var("OUT_DIR") {
-                eprintln!("cargo:rustc-env=TYPES_OUT_DIR={}", out_dir);
-            }
-        }
-    });
+    // static INSTRUCTIONS_PRINTED: std::sync::Once = std::sync::Once::new();
+    // INSTRUCTIONS_PRINTED.call_once(|| {
+    //     if std::env::var("OUT_DIR").is_ok() {
+    //         eprintln!("cargo:rerun-if-changed=src");
+    //         if let Ok(out_dir) = std::env::var("OUT_DIR") {
+    //             eprintln!("cargo:rustc-env=TYPES_OUT_DIR={}", out_dir);
+    //         }
+    //     }
+    // });
 
     let mut index_content = String::new();
 

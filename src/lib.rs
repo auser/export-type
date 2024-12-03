@@ -1,3 +1,4 @@
+use std::env;
 use std::path::PathBuf;
 
 use lang::TSExporter;
@@ -46,7 +47,20 @@ pub fn export_type(input: TokenStream) -> TokenStream {
     match handle_export_type(input.clone()) {
         Ok(_output) => {
             if let Ok(export_path) = get_export_path_from_attrs(&input.attrs) {
-                let _ = create_exporter_files(export_path);
+                // Generate in OUT_DIR during build
+                if let Ok(out_dir) = env::var("OUT_DIR") {
+                    let out_path = PathBuf::from(out_dir);
+                    let _ = create_exporter_files(out_path.join("types"));
+
+                    // Emit cargo instructions for build.rs
+                    println!("cargo:rerun-if-changed=src");
+                    println!("cargo:rustc-env=TYPES_OUT_DIR={}", out_path.display());
+                }
+
+                // During normal compilation, write to target path
+                if env::var("CARGO_PUBLISH").is_err() {
+                    let _ = create_exporter_files(export_path);
+                }
             }
             quote::quote! {}.into()
         }
@@ -64,17 +78,6 @@ fn handle_export_type(input: DeriveInput) -> TSTypeResult<proc_macro2::TokenStre
     add_struct_or_enum(PathBuf::from(name.clone()), output)?;
     Ok(quote::quote! {})
 }
-
-// fn get_exporter_from_attrs(
-//     attrs: &[Attribute],
-//     output: Output,
-//     generics: Vec<String>,
-// ) -> TSTypeResult<Box<dyn ToOutput>> {
-//     match get_lang_from_attrs(attrs)?.as_str() {
-//         "typescript" | "ts" => Ok(Box::new(TSExporter::new(output, None, generics))),
-//         lang => Err(TSTypeError::UnsupportedLanguage(lang.to_string())),
-//     }
-// }
 
 fn get_exporter_from_lang(
     lang: &str,

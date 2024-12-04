@@ -2,7 +2,7 @@
 
 use crate::error::TSTypeResult;
 use crate::exporter::{Output, OutputKind, ToOutput, Type};
-use crate::COLLECTED_TYPES;
+use crate::{RenameRule, COLLECTED_TYPES};
 use std::fs;
 use std::path::PathBuf;
 
@@ -74,22 +74,41 @@ impl TSExporter {
             OutputKind::Enum(variants) => {
                 let variants = variants
                     .iter()
-                    .map(|v| match &v.fields {
-                        None => format!("    | \"{}\"", v.name),
-                        Some(fields) => {
-                            let fields = fields
-                                .iter()
-                                .map(|f| format!("    {}: {};", f.name, self.type_to_ts(&f.ty)))
-                                .collect::<Vec<_>>()
-                                .join("\n");
-                            format!("    | {{ type: \"{}\"; {} }}", v.name, fields)
-                        }
+                    // .map(|v| match &v.fields {
+                    //     None => format!(
+                    //         "    \"{}\" = \"{}\"",
+                    //         RenameRule::ScreamingSnakeCase.apply(&v.name),
+                    //         &v.name
+                    //     ),
+                    //     Some(fields) => {
+                    //         // Ignoring fields for now, unsure how to handle them
+                    //         println!("fields: {:?}", fields);
+                    //         let fields = fields
+                    //             .iter()
+                    //             .map(|f| {
+                    //                 format!(
+                    //                     "    \"{}\" = \"{}\"",
+                    //                     RenameRule::ScreamingSnakeCase.apply(&f.name),
+                    //                     RenameRule::ScreamingSnakeCase.apply(&f.name)
+                    //                 )
+                    //             })
+                    //             .collect::<Vec<_>>()
+                    //             .join("\n");
+                    //         format!("    {{\n{}\n    }}", fields)
+                    //     }
+                    // })
+                    .map(|v| {
+                        format!(
+                            "    {} = \"{}\",",
+                            RenameRule::ScreamingSnakeCase.apply(&v.name),
+                            &v.name
+                        )
                     })
                     .collect::<Vec<_>>()
                     .join("\n");
 
                 format!(
-                    "export type {}{} =\n{};",
+                    "export enum {}{} {{\n{}\n}}",
                     self.output.name, generic_params, variants
                 )
             }

@@ -56,9 +56,10 @@ fn test_generated_enum_types() {
     let status_content = std::fs::read_to_string("target/test_exports/index.ts")
         .expect("Should read status typescript file");
 
-    assert!(status_content.contains("export type TestStatus"));
-    assert!(status_content.contains("| \"Active\""));
-    assert!(status_content.contains("| { type: \"Pending\";     reason: string; }"));
+    assert!(status_content.contains("export enum TestStatus {"));
+    assert!(status_content.contains("ACTIVE = \"Active\","));
+    assert!(status_content.contains("INACTIVE = \"Inactive\","));
+    assert!(status_content.contains("PENDING = \"Pending\","));
 }
 
 #[test]

@@ -16,6 +16,14 @@ struct TestUser {
     details: Option<Value>,
 }
 
+#[derive(sqlx::FromRow, ExportType)]
+#[export_type(path = "target/test_exports", lang = "typescript")]
+struct DatabaseModel {
+    id: i32,
+    name: String,
+    created_at: chrono::DateTime<chrono::Utc>,
+}
+
 #[derive(ExportType)]
 #[export_type(path = "target/test_exports", lang = "typescript")]
 enum TestStatus {
@@ -51,4 +59,13 @@ fn test_generated_enum_types() {
     assert!(status_content.contains("export type TestStatus"));
     assert!(status_content.contains("| \"Active\""));
     assert!(status_content.contains("| { type: \"Pending\";     reason: string; }"));
+}
+
+#[test]
+fn test_sqlx_type_is_skipped_in_database_model_struct() {
+    let database_model_content = std::fs::read_to_string("target/test_exports/index.ts")
+        .expect("Should read database model typescript file");
+
+    assert!(database_model_content.contains("export interface DatabaseModel"));
+    assert!(database_model_content.contains("created_at: Date"));
 }

@@ -78,8 +78,9 @@ fn parse_fields(fields: &Fields, rename_all: Option<&RenameRule>) -> TSTypeResul
     match fields {
         Fields::Named(fields) => {
             for field in &fields.named {
-                let field = parse_field(field, rename_all)?;
-                result.push(field);
+                if let Some(field) = parse_field(field, rename_all)? {
+                    result.push(field);
+                }
             }
         }
         _ => {
@@ -92,7 +93,7 @@ fn parse_fields(fields: &Fields, rename_all: Option<&RenameRule>) -> TSTypeResul
     Ok(result)
 }
 
-fn parse_field(field: &syn::Field, rename_all: Option<&RenameRule>) -> TSTypeResult<Field> {
+fn parse_field(field: &syn::Field, rename_all: Option<&RenameRule>) -> TSTypeResult<Option<Field>> {
     let name = field
         .ident
         .as_ref()
@@ -101,6 +102,8 @@ fn parse_field(field: &syn::Field, rename_all: Option<&RenameRule>) -> TSTypeRes
 
     let mut renamed = name.clone();
     let mut has_explicit_rename = false;
+
+    let mut ty = None;
 
     for attr in &field.attrs {
         if attr.path().is_ident("export_type") {
@@ -122,6 +125,9 @@ fn parse_field(field: &syn::Field, rename_all: Option<&RenameRule>) -> TSTypeRes
                     }
                 }
             }
+        } else if attr.path().is_ident("sqlx") {
+            // Skip processing the `sqlx` attribute
+            continue;
         }
     }
 
@@ -131,14 +137,17 @@ fn parse_field(field: &syn::Field, rename_all: Option<&RenameRule>) -> TSTypeRes
         }
     }
 
-    let ty = parse_type(&field.ty)?;
+    if ty.is_none() {
+        ty = Some(parse_type(&field.ty)?);
+    }
+
     let optional = is_optional(&field.ty);
 
-    Ok(Field {
+    Ok(Some(Field {
         name: renamed,
-        ty,
+        ty: ty.unwrap(),
         optional,
-    })
+    }))
 }
 
 fn parse_variant(variant: &syn::Variant) -> TSTypeResult<Variant> {
@@ -404,7 +413,7 @@ mod tests {
             email: String
         };
 
-        let parsed = parse_field(&field, None).unwrap();
+        let parsed = parse_field(&field, None).unwrap().unwrap();
         assert_eq!(parsed.name, "emailAddress");
         assert!(matches!(parsed.ty, Type::String));
         assert!(!parsed.optional);
@@ -417,7 +426,7 @@ mod tests {
             phone: Option<String>
         };
 
-        let parsed = parse_field(&field, None).unwrap();
+        let parsed = parse_field(&field, None).unwrap().unwrap();
         assert_eq!(parsed.name, "phoneNumber");
         assert!(matches!(parsed.ty, Type::Optional(ref inner) if matches!(**inner, Type::String)));
         assert!(parsed.optional);

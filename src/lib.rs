@@ -54,7 +54,7 @@ pub fn export_type(input: TokenStream) -> TokenStream {
                 }
 
                 // During normal compilation, write to target path
-                if env::var("CARGO_PUBLISH").is_err() {
+                if env::var("CARGO_PUBLISH").is_err() && !env::var("OUT_DIR").is_ok() {
                     let _ = create_exporter_files(export_path);
                 }
             }

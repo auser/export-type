@@ -1,23 +1,17 @@
 use std::path::PathBuf;
 
 use once_cell::sync::Lazy;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::sync::Mutex;
 
 use crate::error::TSTypeResult;
 use crate::{get_exporter_from_lang, RenameRule};
 
 // Track all types for single file generation, using HashSet to prevent duplicates
-pub static COLLECTED_TYPES: Lazy<Mutex<HashMap<PathBuf, HashSet<Output>>>> =
-    Lazy::new(|| Mutex::new(HashMap::new()));
+pub static COLLECTED_TYPES: Lazy<Mutex<HashSet<Output>>> = Lazy::new(|| Mutex::new(HashSet::new()));
 
-pub fn add_struct_or_enum(path: PathBuf, output: Output) -> TSTypeResult<()> {
-    COLLECTED_TYPES
-        .lock()
-        .unwrap()
-        .entry(path)
-        .or_insert_with(HashSet::new)
-        .insert(output);
+pub fn add_struct_or_enum(output: Output) -> TSTypeResult<()> {
+    COLLECTED_TYPES.lock().unwrap().insert(output);
     Ok(())
 }
 
@@ -34,19 +28,21 @@ pub fn create_exporter_files(export_path: PathBuf) -> TSTypeResult<()> {
 
     let mut index_content = String::new();
 
-    for (_path, outputs) in COLLECTED_TYPES.lock().unwrap().iter() {
-        for output in outputs {
-            let exporter = get_exporter_from_lang(
-                output.lang.as_str(),
-                output.clone(),
-                output.generics.clone(),
-            )?;
+    let outputs = COLLECTED_TYPES.lock().unwrap();
+    let mut outputs = Vec::from_iter(outputs.iter().cloned());
+    outputs.sort_by_key(|o| o.name.clone());
 
-            let output = exporter.to_output();
+    for output in outputs.iter() {
+        let exporter = get_exporter_from_lang(
+            output.lang.as_str(),
+            output.clone(),
+            output.generics.clone(),
+        )?;
 
-            index_content.push_str(&output);
-            index_content.push_str("\n\n");
-        }
+        let output = exporter.to_output();
+
+        index_content.push_str(&output);
+        index_content.push_str("\n\n");
     }
 
     if !index_content.is_empty() {

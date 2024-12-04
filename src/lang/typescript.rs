@@ -94,19 +94,16 @@ impl TSExporter {
         }
     }
 
-    pub fn generate_content(path: &PathBuf) -> TSTypeResult<Option<String>> {
+    pub fn generate_content() -> TSTypeResult<Option<String>> {
         let mut result_content = String::new();
         let collected = COLLECTED_TYPES.lock().unwrap();
-        if let Some(types) = collected.get(path) {
-            // Convert HashSet to Vec for sorting
-            let mut sorted_types: Vec<_> = types.iter().cloned().collect();
-            sorted_types.sort_by(|a, b| a.name.cmp(&b.name));
+        let mut outputs = Vec::from_iter(collected.iter().cloned());
+        outputs.sort_by_key(|o| o.name.clone());
 
-            for output in sorted_types {
-                let exporter = TSExporter::new(output.clone(), None, output.generics.clone());
-                result_content.push_str(&exporter.generate_type_definition());
-                result_content.push_str("\n\n");
-            }
+        for output in outputs {
+            let exporter = TSExporter::new(output.clone(), None, output.generics.clone());
+            result_content.push_str(&exporter.generate_type_definition());
+            result_content.push_str("\n\n");
         }
         Ok(Some(result_content))
     }
@@ -126,7 +123,7 @@ impl TSExporter {
         //         content.push_str("\n\n");
         //     }
 
-        let content = Self::generate_content(path)?.unwrap();
+        let content = Self::generate_content()?.unwrap();
         fs::create_dir_all(path.parent().unwrap_or(&PathBuf::from("")))?;
         fs::write(path.join("types.ts"), content.trim())?;
         // }
@@ -143,13 +140,7 @@ impl ToOutput for TSExporter {
         let path = path.unwrap_or_else(|| PathBuf::from("generated"));
 
         // Add type to collection using HashSet
-        COLLECTED_TYPES
-            .lock()
-            .unwrap()
-            .entry(path.clone())
-            .or_default()
-            .insert(self.output.clone());
-
+        COLLECTED_TYPES.lock().unwrap().insert(self.output.clone());
         // Write single file
         Self::write_single_file(&path)?;
 

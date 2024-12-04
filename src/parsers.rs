@@ -222,6 +222,7 @@ fn parse_type(ty: &SynType) -> TSTypeResult<Type> {
                 }
                 // TODO: extract the JSON fields
                 "Value" => Ok(Type::JsonValue),
+                "DateTime" => Ok(Type::DateTime),
                 other => Ok(Type::Custom(other.to_string())),
             }
         }
@@ -307,6 +308,50 @@ mod tests {
             assert!(matches!(fields[0].ty, Type::Number));
             assert_eq!(fields[1].name, "name");
             assert!(matches!(fields[1].ty, Type::JsonValue));
+        } else {
+            panic!("Expected Struct");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_with_serde_json_optional() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Serialize, Deserialize)]
+            struct Test {
+                id: i32,
+                name: Option<serde_json::Value>,
+            }
+        };
+
+        let output = handle_export_type_parsing(&input, "typescript").unwrap();
+        assert_eq!(output.name, "Test");
+        if let OutputKind::Struct(fields) = output.kind {
+            assert_eq!(fields.len(), 2);
+            assert_eq!(fields[0].name, "id");
+            assert!(matches!(fields[0].ty, Type::Number));
+            assert_eq!(fields[1].name, "name");
+            assert!(
+                matches!(fields[1].ty, Type::Optional(ref inner) if matches!(**inner, Type::JsonValue))
+            );
+        } else {
+            panic!("Expected Struct");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_with_chrono_datetime_utc() {
+        let input: DeriveInput = parse_quote! {
+            struct Test {
+                created_at: chrono::DateTime<chrono::Utc>,
+            }
+        };
+
+        let output = handle_export_type_parsing(&input, "typescript").unwrap();
+        assert_eq!(output.name, "Test");
+        if let OutputKind::Struct(fields) = output.kind {
+            assert_eq!(fields.len(), 1);
+            assert_eq!(fields[0].name, "created_at");
+            assert!(matches!(fields[0].ty, Type::DateTime));
         } else {
             panic!("Expected Struct");
         }

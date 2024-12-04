@@ -98,6 +98,7 @@ pub enum Type {
     Boolean,
     HashMap(Box<Type>, Box<Type>),
     JsonValue,
+    DateTime,
     Array(Box<Type>),
     Optional(Box<Type>),
     Custom(String),

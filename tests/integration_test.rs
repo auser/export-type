@@ -11,6 +11,7 @@ struct TestUser {
     roles: Vec<String>,
     #[export_type(rename = "custom_headers")]
     custom_headers: std::collections::HashMap<String, String>,
+    created_at: chrono::DateTime<chrono::Utc>,
 }
 
 #[derive(ExportType)]
@@ -36,7 +37,7 @@ fn test_generated_content() {
     assert!(user_content.contains("id: number"));
     assert!(user_content.contains("emailAddress?: string"));
     assert!(user_content.contains("roles: string[]"));
-
+    assert!(user_content.contains("created_at: Date"));
     let status_content = std::fs::read_to_string("target/test_exports/index.ts")
         .expect("Should read status typescript file");
 

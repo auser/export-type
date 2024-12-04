@@ -1,0 +1,2 @@
+[tasks.test]
+cmd = "cargo test -- --nocapture --color=always"

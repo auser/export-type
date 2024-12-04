@@ -35,6 +35,7 @@ impl TSExporter {
             }
             Type::Array(inner) => format!("{}[]", self.type_to_ts(inner)),
             Type::Optional(inner) => format!("{} | undefined", self.type_to_ts(inner)),
+            Type::JsonValue => "any".to_string(),
             Type::Custom(name) => name.clone(),
         }
     }

@@ -97,6 +97,7 @@ pub enum Type {
     Number,
     Boolean,
     HashMap(Box<Type>, Box<Type>),
+    JsonValue,
     Array(Box<Type>),
     Optional(Box<Type>),
     Custom(String),

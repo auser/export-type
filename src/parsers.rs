@@ -220,6 +220,8 @@ fn parse_type(ty: &SynType) -> TSTypeResult<Type> {
                         "Invalid Option type".to_string(),
                     ))
                 }
+                // TODO: extract the JSON fields
+                "Value" => Ok(Type::JsonValue),
                 other => Ok(Type::Custom(other.to_string())),
             }
         }
@@ -284,6 +286,29 @@ mod tests {
             assert!(variants[1].fields.is_some());
         } else {
             panic!("Expected Enum");
+        }
+    }
+
+    #[test]
+    fn test_parse_struct_with_serde_json() {
+        let input: DeriveInput = parse_quote! {
+            #[derive(Serialize, Deserialize)]
+            struct Test {
+                id: i32,
+                name: serde_json::Value,
+            }
+        };
+
+        let output = handle_export_type_parsing(&input, "typescript").unwrap();
+        assert_eq!(output.name, "Test");
+        if let OutputKind::Struct(fields) = output.kind {
+            assert_eq!(fields.len(), 2);
+            assert_eq!(fields[0].name, "id");
+            assert!(matches!(fields[0].ty, Type::Number));
+            assert_eq!(fields[1].name, "name");
+            assert!(matches!(fields[1].ty, Type::JsonValue));
+        } else {
+            panic!("Expected Struct");
         }
     }
 

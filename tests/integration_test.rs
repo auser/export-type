@@ -1,5 +1,6 @@
 #![allow(unused)]
 use export_type::ExportType;
+use serde_json::Value;
 
 #[derive(ExportType)]
 #[export_type(path = "target/test_exports", lang = "typescript")]
@@ -12,6 +13,7 @@ struct TestUser {
     #[export_type(rename = "custom_headers")]
     custom_headers: std::collections::HashMap<String, String>,
     created_at: chrono::DateTime<chrono::Utc>,
+    details: Option<Value>,
 }
 
 #[derive(ExportType)]
@@ -29,7 +31,7 @@ fn test_generated_files_exist() {
 }
 
 #[test]
-fn test_generated_content() {
+fn test_generated_struct_types() {
     let user_content = std::fs::read_to_string("target/test_exports/index.ts")
         .expect("Should read user typescript file");
 
@@ -38,6 +40,11 @@ fn test_generated_content() {
     assert!(user_content.contains("emailAddress?: string"));
     assert!(user_content.contains("roles: string[]"));
     assert!(user_content.contains("created_at: Date"));
+    assert!(user_content.contains("details?: Record<any, any> | undefined"));
+}
+
+#[test]
+fn test_generated_enum_types() {
     let status_content = std::fs::read_to_string("target/test_exports/index.ts")
         .expect("Should read status typescript file");
 

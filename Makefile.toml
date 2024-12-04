@@ -1,2 +1,7 @@
+[tasks.test-unit]
+command = "cargo"
+args = ["test", "--", "--color=always", "--nocapture"]
+workspace = false
+
 [tasks.test]
-cmd = "cargo test -- --nocapture --color=always"
+dependencies = ["test-unit"]

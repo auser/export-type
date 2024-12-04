@@ -1,4 +1,3 @@
-use std::env;
 use std::path::PathBuf;
 
 use lang::TSExporter;
@@ -46,17 +45,23 @@ pub fn export_type(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
     match handle_export_type(input.clone()) {
         Ok(_output) => {
+            #[cfg(not(test))]
             if let Ok(export_path) = get_export_path_from_attrs(&input.attrs) {
                 // Generate in OUT_DIR during build
-                if let Ok(out_dir) = env::var("OUT_DIR") {
+                if let Ok(out_dir) = std::env::var("OUT_DIR") {
                     let out_path = PathBuf::from(out_dir);
                     let _ = create_exporter_files(out_path.join("types"));
                 }
 
                 // During normal compilation, write to target path
-                if env::var("CARGO_PUBLISH").is_err() && !env::var("OUT_DIR").is_ok() {
+                if std::env::var("CARGO_PUBLISH").is_err() && !std::env::var("OUT_DIR").is_ok() {
                     let _ = create_exporter_files(export_path);
                 }
+            }
+            #[cfg(test)]
+            if let Ok(export_path) = get_export_path_from_attrs(&input.attrs) {
+                // Generate in OUT_DIR during build
+                let _ = create_exporter_files(export_path);
             }
             quote::quote! {}.into()
         }
